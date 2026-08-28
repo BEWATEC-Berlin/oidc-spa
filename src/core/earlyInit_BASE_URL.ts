@@ -3,9 +3,7 @@ import { getSharedState } from "./sharedScope";
 
 const store_moduleScoped: { BASE_URL: string | undefined } = { BASE_URL: undefined };
 
-// Shared across bundles when shared scope is enabled: in a micro-frontend setup only one bundle
-// runs the non memoized part of oidcEarlyInit, so the others would never see the BASE_URL it set.
-// Resolved at use time, a module scope capture would race against enabling shared scope.
+// Shared across bundles, only one of them runs the init that sets this.
 const getStore = () => getSharedState("BASE_URL_earlyInit", store_moduleScoped);
 
 export function getBASE_URL_earlyInit() {

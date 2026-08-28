@@ -5,10 +5,7 @@ const store_moduleScoped: { rootRelativeOriginalLocationHref: string | undefined
     rootRelativeOriginalLocationHref: undefined
 };
 
-// Shared across bundles when shared scope is enabled: only the bundle that ran the non memoized
-// part of oidcEarlyInit sets this, the others read it through the shared store or the assert below
-// would fire in their copy. Resolved at use time, a module scope capture would race against
-// enabling shared scope.
+// Shared across bundles, only one of them runs the init that sets this.
 const getStore = () =>
     getSharedState("rootRelativeOriginalLocationHref_earlyInit", store_moduleScoped);
 

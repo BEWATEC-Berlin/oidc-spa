@@ -275,11 +275,8 @@ const globalContext_moduleScoped = {
     dExports_DPoP: new Deferred<Exports_DPoP>()
 };
 
-// Shared across bundles when shared scope is enabled, so that micro-frontend remotes that each
-// bundle their own copy of oidc-spa resolve the same earlyInit exports and the same instance cache.
-// Resolved at use time rather than at module scope: this module is dynamically imported while
-// oidcEarlyInit (which enables shared scope) may not have run yet, and a capture during module
-// evaluation would race against it.
+// Shared across bundles in micro-frontend setups, resolved at use time because this module is
+// dynamically imported and may evaluate before oidcEarlyInit enables the shared scope.
 const getGlobalContext = () => getSharedState("globalContext", globalContext_moduleScoped);
 
 export type Exports_earlyInit =

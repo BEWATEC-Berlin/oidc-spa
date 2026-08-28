@@ -59,29 +59,17 @@ export type ParamsOfEarlyInit = {
     };
 
     /**
-     * Micro-frontend setups only.
-     *
-     * Each remote is a separate bundle with its own copy of oidc-spa, so module scoped state is not
-     * shared between them. The parts of oidc-spa that are global to the document then run more than
-     * once: the auth callback is consumed by whichever bundle initialises first, and each bundle
-     * registers its own iframe `message` listener, where the first one calls
-     * `stopImmediatePropagation` and swallows the responses meant for the others.
-     *
-     * With this enabled, that state is held on `window` so every bundle shares one instance cache,
-     * one listener, and one auth callback. Every bundle taking part must pass it.
-     *
-     * Only enable it when the host controls which remotes are loaded, since it makes the state
-     * reachable by any script on the page.
+     * Micro-frontend setups only: each remote bundles its own oidc-spa, so the callback handling
+     * and iframe listener run once per bundle and conflict. With this enabled that state is held
+     * on `window` and shared. Every participating bundle must pass it, and it makes the oidc
+     * state reachable by any script on the page, so only use it with trusted remotes.
      */
     isMicroFrontendSetup?: boolean;
 };
 
 const memo_moduleScoped: { shouldLoadApp: boolean | undefined } = { shouldLoadApp: undefined };
 
-// Resolved on call rather than at module scope: shared scope is only enabled once oidcEarlyInit
-// runs, and reading it earlier would capture the unshared object.
-// oidcEarlyInit consumes the auth callback and registers the iframe message listener, which must
-// happen exactly once per document even when several bundles each call it.
+// Shared so the non memoized init runs once per document, not once per bundle.
 const getMemo = () => getSharedState("earlyInitMemo", memo_moduleScoped);
 
 export function oidcEarlyInit(params?: ParamsOfEarlyInit) {

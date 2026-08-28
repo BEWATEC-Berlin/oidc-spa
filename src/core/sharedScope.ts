@@ -1,8 +1,6 @@
 const WINDOW_KEY = "__oidc_spa_shared__";
 
-// Bumped when the shape of the donated objects changes incompatibly. Bundles refuse to adopt a
-// store with a different format and fall back to their own module scope, which degrades to the
-// unshared behaviour instead of corrupting another bundle's state.
+// Bumped on incompatible changes, a bundle seeing another format falls back to module scope.
 const FORMAT_VERSION = 1;
 
 type SharedStore = {
@@ -11,9 +9,7 @@ type SharedStore = {
     state: Record<string, unknown>;
 };
 
-// The store lives on window rather than in module scope because the whole point is to be reachable
-// from another bundle's copy of oidc-spa, which has its own module scope.
-// Reading never creates the store: a consumer that does not opt in must not leave globals behind.
+// Reading never creates the store, only enableSharedScope does.
 function peekStore(): SharedStore | undefined {
     if (typeof window === "undefined") {
         return undefined;
@@ -36,17 +32,7 @@ function peekStore(): SharedStore | undefined {
     return store;
 }
 
-/**
- * Opt into sharing oidc-spa's global state across bundles.
- *
- * In a micro-frontend setup each remote is a separate bundle with its own copy of oidc-spa, so
- * module scoped state is not shared. That breaks the parts of oidc-spa that are inherently global:
- * the auth callback in the url, the iframe message listener, and the instance cache.
- *
- * When enabled, that state lives on `window` instead, so every bundle sees the same one.
- * Only enable it in a trusted micro-frontend host, since it makes the state reachable by any
- * script on the page.
- */
+/** Moves oidc-spa's global state to `window` so every bundle on the page shares it. */
 export function enableSharedScope(): void {
     if (typeof window === "undefined") {
         return;
@@ -78,11 +64,8 @@ export function getIsSharedScopeEnabled(): boolean {
 }
 
 /**
- * Returns the shared instance of `obj` if shared scope is enabled, otherwise `obj` itself.
- *
- * The first bundle to ask for a given key stores its object on `window`, every later bundle gets
- * that same object back and discards its own. Call it at use time, not at module scope: shared
- * scope is enabled by oidcEarlyInit, and a capture during module evaluation races against it.
+ * Shared instance of `obj` when enabled (first bundle donates, the rest adopt), otherwise `obj`.
+ * Call at use time, a module scope capture races against oidcEarlyInit enabling the scope.
  */
 export function getSharedState<T extends object>(key: string, obj: T): T {
     const store = peekStore();
