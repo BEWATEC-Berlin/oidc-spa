@@ -1,4 +1,5 @@
 import * as child_process from "child_process";
+import * as esbuild from "esbuild";
 import * as fs from "fs";
 import {
     join as pathJoin,
@@ -214,26 +215,22 @@ for (const targetFormat of ["cjs", "esm"] as const) {
                             }
 
                             const bundledFilePath = pathJoin(cacheDirPath, "bundle.js");
-                            const esbuildExternalNodeBuiltins =
-                                targetRuntime === "frontend"
-                                    ? ["--external:crypto", "--external:buffer", "--external:util"]
-                                    : [];
 
-                            run(
-                                [
-                                    `npx esbuild`,
-                                    // Double quotes: cmd.exe on Windows does not strip single ones.
-                                    `"${filePath}"`,
-                                    "--bundle",
-                                    "--format=esm",
-                                    "--platform=browser",
-                                    "--main-fields=browser,module,main",
-                                    "--conditions=browser",
-                                    // Do not pull node polyfills for vendor bundles that only run in browsers.
-                                    ...esbuildExternalNodeBuiltins,
-                                    `--outfile="${bundledFilePath}"`
-                                ].join(" ")
-                            );
+                            // The JS api instead of the cli: no shell, so paths need no quoting.
+                            esbuild.buildSync({
+                                entryPoints: [filePath],
+                                bundle: true,
+                                format: "esm",
+                                platform: "browser",
+                                mainFields: ["browser", "module", "main"],
+                                conditions: ["browser"],
+                                // Do not pull node polyfills for vendor bundles that only run in browsers.
+                                external:
+                                    targetRuntime === "frontend"
+                                        ? ["crypto", "buffer", "util"]
+                                        : [],
+                                outfile: bundledFilePath
+                            });
 
                             fs.copyFileSync(bundledFilePath, filePath);
 

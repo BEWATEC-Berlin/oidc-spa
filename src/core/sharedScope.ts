@@ -9,6 +9,10 @@ type SharedStore = {
     state: Record<string, unknown>;
 };
 
+// Sharing requires this bundle's own opt in, so a bundle that never passed the flag keeps its
+// module scoped state even when another bundle on the page enabled the store.
+let isEnabledInThisBundle = false;
+
 // Reading never creates the store, only enableSharedScope does.
 function peekStore(): SharedStore | undefined {
     if (typeof window === "undefined") {
@@ -44,7 +48,13 @@ export function enableSharedScope(): void {
         state: {}
     }) as SharedStore;
 
-    if (store.formatVersion !== FORMAT_VERSION || store.isEnabled) {
+    if (store.formatVersion !== FORMAT_VERSION) {
+        return;
+    }
+
+    isEnabledInThisBundle = true;
+
+    if (store.isEnabled) {
         return;
     }
 
@@ -60,7 +70,7 @@ export function enableSharedScope(): void {
 }
 
 export function getIsSharedScopeEnabled(): boolean {
-    return peekStore()?.isEnabled ?? false;
+    return isEnabledInThisBundle && (peekStore()?.isEnabled ?? false);
 }
 
 /**
@@ -70,7 +80,7 @@ export function getIsSharedScopeEnabled(): boolean {
 export function getSharedState<T extends object>(key: string, obj: T): T {
     const store = peekStore();
 
-    if (store === undefined || !store.isEnabled) {
+    if (!isEnabledInThisBundle || store === undefined || !store.isEnabled) {
         return obj;
     }
 
