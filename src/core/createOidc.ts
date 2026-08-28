@@ -28,6 +28,7 @@ import { authResponseToUrl, type AuthResponse } from "./AuthResponse";
 import { getPersistedAuthState, persistAuthState } from "./persistedAuthState";
 import type { Oidc } from "./Oidc";
 import { createEvt } from "../tools/Evt";
+import { getSharedState } from "./sharedScope";
 import { getHaveSharedParentDomain } from "../tools/haveSharedParentDomain";
 import {
     createLoginOrGoToAuthServer,
@@ -266,13 +267,15 @@ export type ParamsOfCreateOidc<
     disableDPoP?: true;
 };
 
-const globalContext = {
+// Shared across bundles when shared scope is enabled, so that micro-frontend remotes that each
+// bundle their own copy of oidc-spa resolve the same earlyInit exports and the same instance cache.
+const globalContext = getSharedState("globalContext", {
     prOidcByConfigId: new Map<string, Promise<Oidc<any>>>(),
     hasLogoutBeenCalled: id<boolean>(false),
     dExports_earlyInit: new Deferred<Exports_earlyInit>(),
     dExports_tokenSubstitution: new Deferred<Exports_tokenSubstitution>(),
     dExports_DPoP: new Deferred<Exports_DPoP>()
-};
+});
 
 export type Exports_earlyInit =
     | { shouldLoadApp: false }

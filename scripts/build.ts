@@ -222,7 +222,8 @@ for (const targetFormat of ["cjs", "esm"] as const) {
                             run(
                                 [
                                     `npx esbuild`,
-                                    `'${filePath}'`,
+                                    // Double quotes: cmd.exe on Windows does not strip single ones.
+                                    `"${filePath}"`,
                                     "--bundle",
                                     "--format=esm",
                                     "--platform=browser",
@@ -230,7 +231,7 @@ for (const targetFormat of ["cjs", "esm"] as const) {
                                     "--conditions=browser",
                                     // Do not pull node polyfills for vendor bundles that only run in browsers.
                                     ...esbuildExternalNodeBuiltins,
-                                    `--outfile='${bundledFilePath}'`
+                                    `--outfile="${bundledFilePath}"`
                                 ].join(" ")
                             );
 
@@ -256,10 +257,12 @@ for (const targetFormat of ["cjs", "esm"] as const) {
                                         ``,
                                         `module.exports = {`,
                                         `   mode: 'production',`,
-                                        `  entry: '${filePath}',`,
+                                        // JSON.stringify so that the backslashes of a Windows path
+                                        // aren't read as escape sequences.
+                                        `  entry: ${JSON.stringify(filePath)},`,
                                         `  output: {`,
-                                        `    path: '${webpackOutputDirPath}',`,
-                                        `    filename: '${pathBasename(webpackOutputFilePath)}',`,
+                                        `    path: ${JSON.stringify(webpackOutputDirPath)},`,
+                                        `    filename: ${JSON.stringify(pathBasename(webpackOutputFilePath))},`,
                                         `    libraryTarget: 'commonjs2',`,
                                         `    chunkFormat: 'module'`,
                                         `  },`,
