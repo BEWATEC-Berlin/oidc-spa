@@ -267,15 +267,20 @@ export type ParamsOfCreateOidc<
     disableDPoP?: true;
 };
 
-// Shared across bundles when shared scope is enabled, so that micro-frontend remotes that each
-// bundle their own copy of oidc-spa resolve the same earlyInit exports and the same instance cache.
-const globalContext = getSharedState("globalContext", {
+const globalContext_moduleScoped = {
     prOidcByConfigId: new Map<string, Promise<Oidc<any>>>(),
     hasLogoutBeenCalled: id<boolean>(false),
     dExports_earlyInit: new Deferred<Exports_earlyInit>(),
     dExports_tokenSubstitution: new Deferred<Exports_tokenSubstitution>(),
     dExports_DPoP: new Deferred<Exports_DPoP>()
-});
+};
+
+// Shared across bundles when shared scope is enabled, so that micro-frontend remotes that each
+// bundle their own copy of oidc-spa resolve the same earlyInit exports and the same instance cache.
+// Resolved at use time rather than at module scope: this module is dynamically imported while
+// oidcEarlyInit (which enables shared scope) may not have run yet, and a capture during module
+// evaluation would race against it.
+const getGlobalContext = () => getSharedState("globalContext", globalContext_moduleScoped);
 
 export type Exports_earlyInit =
     | { shouldLoadApp: false }
@@ -291,7 +296,7 @@ export type Exports_earlyInit =
       };
 
 export function registerExports_earlyInit(exports: Exports_earlyInit): void {
-    globalContext.dExports_earlyInit.resolve(exports);
+    getGlobalContext().dExports_earlyInit.resolve(exports);
 }
 
 export type Exports_tokenSubstitution = {
@@ -310,7 +315,7 @@ export namespace Exports_tokenSubstitution {
 }
 
 export function registerExports_tokenSubstitution(exports: Exports_tokenSubstitution): void {
-    globalContext.dExports_tokenSubstitution.resolve(exports);
+    getGlobalContext().dExports_tokenSubstitution.resolve(exports);
 }
 
 export type Exports_DPoP = {
@@ -342,7 +347,7 @@ export namespace Exports_DPoP {
 }
 
 export function registerExports_DPoP(exports: Exports_DPoP): void {
-    globalContext.dExports_DPoP.resolve(exports);
+    getGlobalContext().dExports_DPoP.resolve(exports);
 }
 
 /** @see: https://docs.oidc-spa.dev/v/v10/usage */
@@ -387,7 +392,7 @@ export async function createOidc<
 
     const configId = getConfigId({ issuerUri, clientId });
 
-    const { prOidcByConfigId } = globalContext;
+    const { prOidcByConfigId } = getGlobalContext();
 
     use_previous_instance: {
         const prOidc = prOidcByConfigId.get(configId);
@@ -467,7 +472,7 @@ export async function createOidc_nonMemoized<
             );
         }, 3_000);
 
-        const exports_earlyInit = await globalContext.dExports_earlyInit.pr;
+        const exports_earlyInit = await getGlobalContext().dExports_earlyInit.pr;
 
         window.clearTimeout(timer);
 
@@ -487,9 +492,9 @@ export async function createOidc_nonMemoized<
     const sessionRestorationMethod =
         sessionRestorationMethod_params ?? sessionRestorationMethod_earlyInit ?? "auto";
 
-    const { value: exports_tokenSubstitution } = globalContext.dExports_tokenSubstitution.getState();
+    const { value: exports_tokenSubstitution } = getGlobalContext().dExports_tokenSubstitution.getState();
 
-    const { value: exports_DPoP } = globalContext.dExports_DPoP.getState();
+    const { value: exports_DPoP } = getGlobalContext().dExports_DPoP.getState();
 
     const scopes = Array.from(new Set(["openid", ...(params.scopes ?? ["profile"])]));
 
@@ -1570,12 +1575,12 @@ export async function createOidc_nonMemoized<
         },
         getDecodedIdToken: () => currentTokens.decodedIdToken,
         logout: async params => {
-            if (globalContext.hasLogoutBeenCalled) {
+            if (getGlobalContext().hasLogoutBeenCalled) {
                 log?.("logout() has already been called, ignoring the call");
                 return new Promise<never>(() => {});
             }
 
-            globalContext.hasLogoutBeenCalled = true;
+            getGlobalContext().hasLogoutBeenCalled = true;
 
             const rootRelativePostLogoutRedirectUrl: string = (() => {
                 switch (params.redirectTo) {
