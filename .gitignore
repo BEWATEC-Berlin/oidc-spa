@@ -54,3 +54,6 @@ jspm_packages
 /react-router-website
 /oidc-client-ts
 /examples/tanstack-start_legacy/
+.npmrc
+package-lock.json
+tsconfig.tsbuildinfo
