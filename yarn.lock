@@ -11,9 +11,9 @@
     "@jridgewell/trace-mapping" "^0.3.24"
 
 "@angular/common@^20.3.1":
-  version "20.3.26"
-  resolved "https://registry.yarnpkg.com/@angular/common/-/common-20.3.26.tgz#b4e99d25b4b6476f0a258376371469823fb0a130"
-  integrity sha512-35+aHaCmldFZ2qFiH83+cHcDXwUqSEuUR5DVApcd+Ku8PfIIGo8uMiD5++Qq7QIUTbZCD2glAiE9jLroGrf1Cw==
+  version "20.3.28"
+  resolved "https://registry.yarnpkg.com/@angular/common/-/common-20.3.28.tgz#c3b639fe112b62498913cdca8b82330d469df8ef"
+  integrity sha512-vvMrBI0POHYeUE8EnN4ohYOqLkmZXI6oKJnMvarfukySnw7mZ4VuY4DNAnRSbEZEqO55sOmVCQ7jbxDDt34tZw==
   dependencies:
     tslib "^2.3.0"
 
