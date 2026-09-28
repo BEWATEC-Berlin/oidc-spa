@@ -44,6 +44,7 @@ import { isNetworkError } from "../tools/isNetworkError";
 import { isKeycloak } from "../keycloak/isKeycloak";
 import { INFINITY_TIME } from "../tools/INFINITY_TIME";
 import { getRootRelativeOriginalLocationHref_earlyInit } from "./earlyInit_rootRelativeOriginalLocationHref";
+import { getMicroFrontendOwner_earlyInit } from "./earlyInit_microFrontendOwner";
 import { getIsLikelyDevServer } from "../tools/isLikelyDevServer";
 import { createObjectThatThrowsIfAccessed } from "../tools/createObjectThatThrowsIfAccessed";
 import {
@@ -158,6 +159,15 @@ export function registerExports_DPoP(exports: Exports_DPoP): void {
 export function createOidc<User = undefined, AutoLogin extends boolean = false>(
     params: ParamsOfCreateOidc<User, AutoLogin>
 ): Promise<AutoLogin extends true ? Oidc.LoggedIn<User> : Oidc<User>> {
+    const microFrontendOwner = getMicroFrontendOwner_earlyInit();
+
+    if (microFrontendOwner !== undefined) {
+        // The owner's oidc state and BASE_URL apply, its callback handling only accepts its own path.
+        return microFrontendOwner.prModuleCreateOidc.then(({ createOidc }) =>
+            createOidc<User, AutoLogin>(params)
+        );
+    }
+
     return createOidc_impl(params);
 }
 
