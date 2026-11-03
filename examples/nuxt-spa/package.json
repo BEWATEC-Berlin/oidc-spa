@@ -22,7 +22,7 @@
         "vue": "^3.5.29",
         "vue-router": "^5.0.3",
         "oidc-spa": "latest",
-        "zod": "4.3.6"
+        "zod": "4.6.6"
     },
     "devDependencies": {
         "@tailwindcss/vite": "^4.2.1",
